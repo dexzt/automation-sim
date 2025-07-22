@@ -170,7 +170,7 @@
       //scene.add(forklift);
 
 	 // Load forklift model (via GitHub CDN or GitHub Pages)
-	  const forkliftURL = "https://dexzt.github.io/automation-sim/models/forklift.glb_backup";
+	  const forkliftURL = "https://dexzt.github.io/automation-sim/models/moving_forklift.glb";
 	  let forklift;
 	  const loader = new THREE.GLTFLoader();
 	  loader.load(forkliftURL, gltf => {
