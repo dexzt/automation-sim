@@ -173,11 +173,25 @@
 	  const loader = new THREE.GLTFLoader();
 	  loader.load(forkliftURL, gltf => {
 		forklift = gltf.scene;
-		forklift.scale.set(0.5, 0.5, 0.5);
-		forklift.position.set(0, 0.5, -5);
-		forklift.traverse(obj => obj.castShadow = true);
-		scene.add(forklift);
-	  });
+		forklift.scale.set(0.005, 0.005, 0.005);
+		forklift.position.set(0, 0.05, 2);
+		forklift.traverse(obj => {
+    if (obj.isMesh) {
+      obj.castShadow = true;
+
+      // Change color to yellow
+      if (obj.material && obj.material.color) {
+        obj.material.color.set(0xffcc00); // vibrant warehouse yellow
+      }
+    }
+  });
+  forklift.traverse(obj => {
+  if (obj.isMesh) console.log(obj.name);
+});
+
+  scene.add(forklift);
+});
+
 
 
       function animate() {
