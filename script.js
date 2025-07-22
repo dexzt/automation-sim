@@ -7,7 +7,8 @@
     document.addEventListener('keyup', e => {
       if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
     });
-	
+
+
     document.addEventListener("DOMContentLoaded", () => {
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xf0f0f0);
@@ -26,6 +27,7 @@
       controls.dampingFactor = 0.05;
       controls.target.set(0, 2, -10);
       controls.update();
+
 
       // Lights
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -168,21 +170,32 @@
       //scene.add(forklift);
 
 	 // Load forklift model (via GitHub CDN or GitHub Pages)
-	  const forkliftURL = "https://dexzt.github.io/automation-sim/models/forklift.glb";
+	  const forkliftURL = "https://dexzt.github.io/automation-sim/models/forklift.glb_backup";
 	  let forklift;
 	  const loader = new THREE.GLTFLoader();
 	  loader.load(forkliftURL, gltf => {
 		forklift = gltf.scene;
 		forklift.scale.set(0.005, 0.005, 0.005);
-		forklift.position.set(0, 0.05, 2);
+		forklift.position.set(1, 0, 2);
 		forklift.traverse(obj => {
     if (obj.isMesh) {
       obj.castShadow = true;
+	if (obj.isMesh && obj.name == "Sweep")
+	{
+		window.forksMesh = obj; //save locally
+		console.log(forksMesh.type); // should be 'Mesh'
+		forksMesh.updateMatrixWorld();
+
+	}
+	
+
 
       // Change color to yellow
       if (obj.material && obj.material.color) {
         obj.material.color.set(0xffcc00); // vibrant warehouse yellow
       }
+	  const lift = forklift.getObjectByName("Sweep");
+		if (lift) lift.material.color.set(0x00000); // red highlight	
     }
   });
   forklift.traverse(obj => {
@@ -201,13 +214,18 @@
 		 // 🦾 Forklift Controls
 		const moveSpeed = 0.1, rotateSpeed = 0.05, liftSpeed = 0.05;
 
-		if (keys.s) forklift.translateZ(-moveSpeed);
-		if (keys.w) forklift.translateZ(moveSpeed);
+		if (keys.w) forklift.translateX(-moveSpeed);
+		if (keys.s) forklift.translateX(moveSpeed);
 		if (keys.a) forklift.rotation.y += rotateSpeed;
 		if (keys.d) forklift.rotation.y -= rotateSpeed;
-		if (keys.ArrowUp) forklift.position.y = Math.min(forklift.position.y + liftSpeed, 5);
-		if (keys.ArrowDown) forklift.position.y = Math.max(forklift.position.y - liftSpeed, 0.5);
+		//if (keys.ArrowUp) forklift.position.y = Math.min(forklift.position.y + liftSpeed, 5);
+		//if (keys.ArrowDown) forklift.position.y = Math.max(forklift.position.y - liftSpeed, 0.5);
 
+		if (window.forksMesh) {
+		  const deltaY = (keys.ArrowUp ? 0.05 : keys.ArrowDown ? -0.05 : 0);
+		  const targetY = THREE.MathUtils.clamp(forksMesh.position.y + deltaY, 0, 4);
+		  forksMesh.position.y = targetY;
+		}
 
         controls.update();
         renderer.render(scene, camera);
