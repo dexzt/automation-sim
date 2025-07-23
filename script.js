@@ -175,12 +175,12 @@
 	  const loader = new THREE.GLTFLoader();
 	  loader.load(forkliftURL, gltf => {
 		forklift = gltf.scene;
-		forklift.scale.set(0.005, 0.005, 0.005);
-		forklift.position.set(1, 0, 2);
+		forklift.scale.set(0.5, 0.5, 0.5);
+		forklift.position.set(2, .45, -5);
 		forklift.traverse(obj => {
     if (obj.isMesh) {
-      obj.castShadow = true;
-	if (obj.isMesh && obj.name == "Sweep")
+      obj.castShadow = false;
+	if (obj.isMesh && obj.name == "Object_23")
 	{
 		window.forksMesh = obj; //save locally
 		console.log(forksMesh.type); // should be 'Mesh'
@@ -194,12 +194,12 @@
       if (obj.material && obj.material.color) {
         obj.material.color.set(0xffcc00); // vibrant warehouse yellow
       }
-	  const lift = forklift.getObjectByName("Sweep");
+	  const lift = forklift.getObjectByName("Object_33");
 		if (lift) lift.material.color.set(0x00000); // red highlight	
     }
   });
   forklift.traverse(obj => {
-  if (obj.isMesh) console.log(obj.name);
+  if (obj.isMesh) console.log(obj.getObject);
 });
 
   scene.add(forklift);
@@ -212,7 +212,7 @@
         animateBoxPath();
 		
 		 // 🦾 Forklift Controls
-		const moveSpeed = 0.1, rotateSpeed = 0.05, liftSpeed = 0.05;
+		const moveSpeed = 0.01, rotateSpeed = 0.005, liftSpeed = 0.05;
 
 		if (keys.w) forklift.translateX(-moveSpeed);
 		if (keys.s) forklift.translateX(moveSpeed);
