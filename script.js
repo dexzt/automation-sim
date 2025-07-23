@@ -177,25 +177,26 @@
 		forklift = gltf.scene;
 		forklift.scale.set(0.5, 0.5, 0.5);
 		forklift.position.set(2, .45, -5);
-		forklift.traverse(obj => {
-    if (obj.isMesh) {
-      obj.castShadow = false;
-	if (obj.isMesh && obj.name == "Object_23")
-	{
-		window.forksMesh = obj; //save locally
-		console.log(forksMesh.type); // should be 'Mesh'
-		forksMesh.updateMatrixWorld();
+		forklift.traverse(obj => 
+		{
+			if (obj.isMesh) 
+			{
+				obj.castShadow = false;
+				if (obj.isMesh && obj.name == "Object_23")
+				{
+					window.forksMesh = obj; //save locally
+					console.log(forksMesh.type); // should be 'Mesh'
+					forksMesh.updateMatrixWorld();
 
-	}
-	
+				}
+				if (obj.name === "Object_13") window.wheelFR = obj;
+				if (obj.name === "Object_7") window.wheelRR = obj;
 
 
       // Change color to yellow
       if (obj.material && obj.material.color) {
         obj.material.color.set(0xffcc00); // vibrant warehouse yellow
-      }
-	  const lift = forklift.getObjectByName("Object_33");
-		if (lift) lift.material.color.set(0x00000); // red highlight	
+      }	
     }
   });
   forklift.traverse(obj => {
@@ -226,6 +227,12 @@
 		  const targetY = THREE.MathUtils.clamp(forksMesh.position.y + deltaY, 0, 4);
 		  forksMesh.position.y = targetY;
 		}
+		if (window.wheelFL) 
+		{
+			window.wheelFL.rotation.x += 0.1; // spin forward
+			window.wheelFL.position.y += 0.01; // lift slightly
+		}
+
 
         controls.update();
         renderer.render(scene, camera);
@@ -237,9 +244,3 @@
       gsap.from(".navbar", { y: -50, opacity: 0, duration: 1, delay: 0.3, ease: "power2.out" });
     });
 	
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	window.addEventListener("resize", () => {
-	  camera.aspect = window.innerWidth / window.innerHeight;
-	  camera.updateProjectionMatrix();
-	  renderer.setSize(window.innerWidth, window.innerHeight);
-	});
