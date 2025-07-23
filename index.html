@@ -18,6 +18,11 @@
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
+	
+	@media (min-width: 768px) {
+	#mobileControls { display: none; }
+	}
+
   </style>
 </head>
 <body>
@@ -39,6 +44,21 @@
     ↓ – Lower Forklift
   </div>
   </div>
+  <div id="mobileControls" class="position-absolute bottom-0 start-50 translate-middle-x mb-3 text-center">
+  <div class="btn-group" role="group">
+    <button class="btn btn-warning btn-sm mx-1" id="btnForward">↑</button>
+    <button class="btn btn-secondary btn-sm mx-1" id="btnBackward">↓</button>
+  </div>
+  <div class="btn-group mt-2" role="group">
+    <button class="btn btn-info btn-sm mx-1" id="btnLeft">←</button>
+    <button class="btn btn-info btn-sm mx-1" id="btnRight">→</button>
+  </div>
+  <div class="btn-group mt-2" role="group">
+    <button class="btn btn-primary btn-sm mx-1" id="btnLiftUp">Lift ▲</button>
+    <button class="btn btn-primary btn-sm mx-1" id="btnLiftDown">Lift ▼</button>
+  </div>
+</div>
+
 	
   <!-- Load simulation script -->
   <script src="script.js"></script>

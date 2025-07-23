@@ -10,7 +10,25 @@
 
 
     document.addEventListener("DOMContentLoaded", () => {
-      const scene = new THREE.Scene();
+			const keyMap = {
+		  btnForward: "w",
+		  btnBackward: "s",
+		  btnLeft: "a",
+		  btnRight: "d",
+		  btnLiftUp: "ArrowUp",
+		  btnLiftDown: "ArrowDown"
+		};
+
+		Object.entries(keyMap).forEach(([id, key]) => {
+		  const btn = document.getElementById(id);
+		  btn?.addEventListener("touchstart", () => (keys[key] = true));
+		  btn?.addEventListener("touchend", () => (keys[key] = false));
+		  btn?.addEventListener("mousedown", () => (keys[key] = true));
+		  btn?.addEventListener("mouseup", () => (keys[key] = false));
+		});
+			  
+	  
+	  const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xf0f0f0);
 
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
