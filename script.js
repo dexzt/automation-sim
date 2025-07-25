@@ -1,264 +1,109 @@
-    const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false };
+import { createBoxes, animateBoxes } from "./ui/boxes.js";
+import { loadForklift, controlForklift } from "./ui/forklift.js";
+import { createConveyor } from "./ui/conveyor.js";
+import { createShelves, trays, shelfBoxes } from "./ui/shelves.js";
 
-    document.addEventListener('keydown', e => {
-      if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
-    });
+const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false };
+document.addEventListener("keydown", e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+document.addEventListener("keyup", e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
 
-    document.addEventListener('keyup', e => {
-      if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
-    });
+document.addEventListener("DOMContentLoaded", () => {
+  const keyMap = {
+    btnForward: "w", btnBackward: "s", btnLeft: "a", btnRight: "d",
+    btnLiftUp: "ArrowUp", btnLiftDown: "ArrowDown"
+  };
+  Object.entries(keyMap).forEach(([id, key]) => {
+    const btn = document.getElementById(id);
+    ["touchstart", "mousedown"].forEach(evt => btn?.addEventListener(evt, () => keys[key] = true));
+    ["touchend", "mouseup"].forEach(evt => btn?.addEventListener(evt, () => keys[key] = false));
+  });
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0);
+
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(16, 7, 15);
+  camera.minZoom = .5;
+  camera.maxZoom = 2.0;
+
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.target.set(0, 2, -10);
+  controls.minDistance = 5;
+  controls.MaxDistance = 5;
+  controls.update();
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 10, 10);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(35, 40),
+    new THREE.MeshStandardMaterial({ color: 0xdddddd })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Modular components
+  createConveyor(scene);
+  createShelves(scene);
+  createBoxes(scene);
+  loadForklift(scene);
+
+  let isPaused = false;
+  window.pauseAnimation = () => isPaused = true;
+  window.resumeAnimation = () => isPaused = false;
+
+const tooltip = document.getElementById("tooltip");
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+window.addEventListener("mousemove", event => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
 
 
-    document.addEventListener("DOMContentLoaded", () => {
-			const keyMap = {
-		  btnForward: "w",
-		  btnBackward: "s",
-		  btnLeft: "a",
-		  btnRight: "d",
-		  btnLiftUp: "ArrowUp",
-		  btnLiftDown: "ArrowDown"
-		};
+function updateTooltip(camera) {
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(shelfBoxes);
 
-		Object.entries(keyMap).forEach(([id, key]) => {
-		  const btn = document.getElementById(id);
-		  btn?.addEventListener("touchstart", () => (keys[key] = true));
-		  btn?.addEventListener("touchend", () => (keys[key] = false));
-		  btn?.addEventListener("mousedown", () => (keys[key] = true));
-		  btn?.addEventListener("mouseup", () => (keys[key] = false));
-		});
-			  
-	  
-	  const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xf0f0f0);
+  if (intersects.length > 0) {
+    const obj = intersects[0].object;
+    const screenPos = obj.position.clone().project(camera);
 
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(16, 7, 15);
-
-      const renderer = new THREE.WebGLRenderer();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      document.body.appendChild(renderer.domElement);
-
-      const controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.target.set(0, 2, -10);
-      controls.update();
-
-
-      // Lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
-
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      directionalLight.position.set(10, 10, 10);
-      directionalLight.castShadow = true;
-      scene.add(directionalLight);
-
-      // Floor
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(50, 50),
-        new THREE.MeshStandardMaterial({ color: 0xdddddd })
-      );
-      floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
-      scene.add(floor);
-
-      // Conveyor Loop (Rectangular)
-      const conveyorGroup = new THREE.Group();
-      const beltMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-
-      const frontBelt = new THREE.Mesh(new THREE.BoxGeometry(24, 0.3, 1), beltMaterial);
-      frontBelt.position.set(0, 0.15, -2);
-      frontBelt.castShadow = true;
-      conveyorGroup.add(frontBelt);
-
-      const leftBelt = new THREE.Mesh(new THREE.BoxGeometry(1, 0.3, 16), beltMaterial);
-      leftBelt.position.set(-12, 0.15, -10);
-      leftBelt.castShadow = true;
-      conveyorGroup.add(leftBelt);
-
-      const rightBelt = new THREE.Mesh(new THREE.BoxGeometry(1, 0.3, 16), beltMaterial);
-      rightBelt.position.set(12, 0.15, -10);
-      rightBelt.castShadow = true;
-      conveyorGroup.add(rightBelt);
-
-      const backBelt = new THREE.Mesh(new THREE.BoxGeometry(24, 0.3, 1), beltMaterial);
-      backBelt.position.set(0, 0.15, -18);
-      backBelt.castShadow = true;
-      conveyorGroup.add(backBelt);
-
-      scene.add(conveyorGroup);
-
-      // Racking System
-      const rackGroup = new THREE.Group();
-      const trays = [];
-
-      for (let x = -10; x <= 10; x += 2) {
-        for (let level = 0; level < 4; level++) {
-          const tray = new THREE.Mesh(
-            new THREE.BoxGeometry(1.8, 0.2, 1.2),
-            new THREE.MeshStandardMaterial({ color: 0xffcc00 })
-          );
-          tray.position.set(x, 1.2 + level * 1.2, -10);
-          tray.castShadow = true;
-          rackGroup.add(tray);
-          trays.push(tray);
-
-          const uprights = new THREE.Mesh(
-            new THREE.BoxGeometry(0.2, 5, 0.2),
-            new THREE.MeshStandardMaterial({ color: 0x444444 })
-          );
-          uprights.position.set(x, 2.5, -11);
-          rackGroup.add(uprights);
-        }
-      }
-      scene.add(rackGroup);
-
-      // Moving Box
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.5, 0.5),
-        new THREE.MeshStandardMaterial({ color: 0xff6600 })
-      );
-      box.castShadow = true;
-      scene.add(box);
-
-      let isPaused = false;
-      window.pauseAnimation = () => isPaused = true;
-      window.resumeAnimation = () => isPaused = false;
-	  
-	  //Boxes
-		const boxes = [];
-		const boxCount = 10;
-		for (let i = 0; i < boxCount; i++) {
-		  const box = new THREE.Mesh(
-			new THREE.BoxGeometry(0.5, 0.5, 0.5),
-			new THREE.MeshStandardMaterial({ color: 0xff6600 })
-		  );
-		  box.castShadow = true;
-		  scene.add(box);
-		  boxes.push({ mesh: box, phase: i * 40 }); // Stagger starting positions
+    tooltip.innerHTML = `<strong>${obj.userData.label}</strong><br>${obj.userData.info}`;
+    tooltip.style.display = "block";
+    tooltip.style.left = `${(screenPos.x * 0.5 + 0.5) * window.innerWidth}px`;
+    tooltip.style.top = `${(-screenPos.y * 0.5 + 0.5) * window.innerHeight}px`;
+  } else {
+    tooltip.style.display = "none";
+  }
 }
 
-      // Path navigation logic (box moves clockwise around rectangular loop)
-      let phase = 0;
-      function animateBoxPath() {
-        if (!isPaused) {
-          phase += 0.05;
 
-          let x = 0, z = 0;
-          if (phase < 48) {           // Front belt → Right
-            x = -12 + phase * 0.5;
-            z = -2;
-          } else if (phase < 80) {    // Right belt → Back
-            x = 12;
-            z = -2 - (phase - 48) * 0.5;
-          } else if (phase < 128) {   // Back belt → Left
-            x = 12 - (phase - 80) * 0.5;
-            z = -18;
-          } else if (phase < 160) {   // Left belt → Front
-            x = -12;
-            z = -18 + (phase - 128) * 0.5;
-          } else {
-            phase = 0;
-          }
+  function animate() {
+    requestAnimationFrame(animate);
+    animateBoxes(trays, isPaused);
+    controlForklift(keys);
+    controls.update();
+    renderer.render(scene, camera);
+    updateTooltip(camera);
+  }
 
-          box.position.set(x, 0.5, z);
+  animate();
 
-          const boxBB = new THREE.Box3().setFromObject(box);
-          trays.forEach(tray => {
-            const trayBB = new THREE.Box3().setFromObject(tray);
-            tray.material.color.set(boxBB.intersectsBox(trayBB) ? 0x00ff00 : 0xffcc00);
-          });
-        }
-      }
-      // Forklift 
-      //const forklift = new THREE.Group();
-      //const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
-      //body.castShadow = true;
-      //forklift.add(body);
-
-      //const forks = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.4), new THREE.MeshStandardMaterial({ color: 0x555555 }));
-      //forks.position.set(0, -0.4, 1);
-      //forks.castShadow = true;
-      //forklift.add(forks);
-
-      //forklift.position.set(0, 0.5, -5);
-      //scene.add(forklift);
-
-	 // Load forklift model (via GitHub CDN or GitHub Pages)
-	  const forkliftURL = "https://dexzt.github.io/automation-sim/models/moving_forklift.glb";
-	  let forklift;
-	  const loader = new THREE.GLTFLoader();
-	  loader.load(forkliftURL, gltf => {
-		forklift = gltf.scene;
-		forklift.scale.set(0.5, 0.5, 0.5);
-		forklift.position.set(2, .45, -5);
-		forklift.traverse(obj => 
-		{
-			if (obj.isMesh) 
-			{
-				obj.castShadow = false;
-				if (obj.isMesh && obj.name == "Object_23")
-				{
-					window.forksMesh = obj; //save locally
-					console.log(forksMesh.type); // should be 'Mesh'
-					forksMesh.updateMatrixWorld();
-
-				}
-				if (obj.name === "Object_13") window.wheelFR = obj;
-				if (obj.name === "Object_7") window.wheelRR = obj;
-
-
-      // Change color to yellow
-      if (obj.material && obj.material.color) {
-        obj.material.color.set(0xffcc00); // vibrant warehouse yellow
-      }	
-    }
-  });
-  forklift.traverse(obj => {
-  if (obj.isMesh) console.log(obj.getObject);
+  // UI Animation
+  gsap.from("#controlPanel", { x: -100, opacity: 0, duration: 1, ease: "power2.out" });
+  gsap.from(".navbar", { y: -50, opacity: 0, duration: 1, delay: 0.3, ease: "power2.out" });
 });
-
-  scene.add(forklift);
-});
-
-
-
-      function animate() {
-        requestAnimationFrame(animate);
-        animateBoxPath();
-		
-		 // 🦾 Forklift Controls
-		const moveSpeed = 0.01, rotateSpeed = 0.005, liftSpeed = 0.05;
-
-		if (keys.w) forklift.translateX(-moveSpeed);
-		if (keys.s) forklift.translateX(moveSpeed);
-		if (keys.a) forklift.rotation.y += rotateSpeed;
-		if (keys.d) forklift.rotation.y -= rotateSpeed;
-		//if (keys.ArrowUp) forklift.position.y = Math.min(forklift.position.y + liftSpeed, 5);
-		//if (keys.ArrowDown) forklift.position.y = Math.max(forklift.position.y - liftSpeed, 0.5);
-
-		if (window.forksMesh) {
-		  const deltaY = (keys.ArrowUp ? 0.05 : keys.ArrowDown ? -0.05 : 0);
-		  const targetY = THREE.MathUtils.clamp(forksMesh.position.y + deltaY, 0, 4);
-		  forksMesh.position.y = targetY;
-		}
-		if (window.wheelFL) 
-		{
-			window.wheelFL.rotation.x += 0.1; // spin forward
-			window.wheelFL.position.y += 0.01; // lift slightly
-		}
-
-
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      // UI Animation
-      gsap.from("#controlPanel", { x: -100, opacity: 0, duration: 1, ease: "power2.out" });
-      gsap.from(".navbar", { y: -50, opacity: 0, duration: 1, delay: 0.3, ease: "power2.out" });
-    });
-	
