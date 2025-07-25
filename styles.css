@@ -1,0 +1,29 @@
+body { margin: 0; overflow: hidden; }
+canvas { display: block; }
+
+@media (min-width: 768px) {
+#mobileControls { display: none; }
+}
+.glass-box {
+background: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(8px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+}
+div li {
+  color: black;
+}
+div p {
+  color: black;
+}
+#tooltip {
+  position: absolute;
+  padding: 6px 10px;
+  background: #222;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
