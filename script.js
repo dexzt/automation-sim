@@ -91,6 +91,23 @@ function updateTooltip(camera) {
   }
 }
 
+function resetScene() {
+  // 🏗️ Reset forklift (physics body and visual mesh)
+  forkliftBody.position.set(0, 1, 0);
+  forkliftBody.velocity.set(0, 0, 0);
+  forkliftBody.angularVelocity.set(0, 0, 0);
+  forkliftBody.quaternion.set(0, 0, 0, 1); // no rotation
+
+  forkliftMesh.position.copy(forkliftBody.position);
+  forkliftMesh.quaternion.copy(forkliftBody.quaternion);
+
+  // 🎥 Reset camera (example position + target)
+  camera.position.set(0, 5, 10);
+  camera.lookAt(new THREE.Vector3(0, 1, 0));
+
+  console.log("Scene reset: forklift and camera repositioned");
+}
+
 
   function animate() {
     requestAnimationFrame(animate);
